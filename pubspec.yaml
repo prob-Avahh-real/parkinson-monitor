@@ -1,0 +1,69 @@
+name: parkinson_monitor
+description: "帕金森综合征运动障碍可穿戴监测应用"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  fl_chart: ^0.70.2
+  google_fonts: ^6.2.1
+  shimmer: ^3.0.0
+
+  # State management
+  flutter_bloc: ^8.1.0
+  equatable: ^2.0.5
+
+  # DI
+  get_it: ^8.0.3
+
+  # BLE
+  flutter_blue_plus: ^1.32.0
+
+  # Sensors (phone fallback)
+  sensors_plus: ^4.0.0
+
+  # Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.0
+
+  # Location
+  geolocator: ^10.0.0
+
+  # Feedback
+  vibration: ^1.8.0
+  audioplayers: ^5.2.0
+
+  # Permissions
+  permission_handler: ^11.0.0
+
+  # Utilities
+  intl: ^0.18.1
+  uuid: ^4.2.0
+  collection: ^1.18.0
+
+  # Supabase cloud sync
+  supabase_flutter: ^2.3.0
+
+  # PDF export
+  pdf: ^3.10.0
+  printing: ^5.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/sounds/
+    - assets/images/

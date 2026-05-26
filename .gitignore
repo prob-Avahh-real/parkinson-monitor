@@ -1,0 +1,27 @@
+# Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+*.lock
+pubspec.lock
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+
+# macOS
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# Misc
+*.log
+*.pyc
+.DS_Store
