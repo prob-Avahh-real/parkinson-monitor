@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/config/gmi_cloud_config.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/theme/app_theme.dart';
@@ -9,6 +10,8 @@ import 'presentation/pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   final gmiApiKey = GmiCloudConfig.apiKey;
   if (gmiApiKey.isNotEmpty) {
