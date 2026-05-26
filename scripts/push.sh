@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================
-# Parkinson Monitor — 三平台推送脚本
+# Parkinson Monitor — 四平台推送脚本
 # 用法: bash scripts/push.sh
 # ============================================
 set -e
@@ -11,10 +11,12 @@ echo "🔧 配置 Git remotes..."
 ATOMGIT_URL="https://atomgit.com/YOUR_ORG/parkinson-monitor.git"
 GITHUB_URL="https://github.com/YOUR_ORG/parkinson-monitor.git"
 GITLAB_URL="https://gitlab.com/YOUR_ORG/parkinson-monitor.git"
+GITCODE_URL="https://gitcode.com/YOUR_ORG/parkinson-monitor.git"
 
 git remote add atomgit "$ATOMGIT_URL" 2>/dev/null || git remote set-url atomgit "$ATOMGIT_URL"
 git remote add github "$GITHUB_URL"   2>/dev/null || git remote set-url github "$GITHUB_URL"
 git remote add gitlab "$GITLAB_URL"   2>/dev/null || git remote set-url gitlab "$GITLAB_URL"
+git remote add gitcode "$GITCODE_URL"   2>/dev/null || git remote set-url gitcode "$GITCODE_URL"
 
 echo "📦 暂存所有文件..."
 git add .
@@ -31,8 +33,14 @@ git push -u github main
 echo "🚀 推送到 GitLab..."
 git push -u gitlab main
 
-echo "✅ 三平台推送完成!"
+echo "🚀 推送到 GitCode..."
+git push -u gitcode main
+
+echo "✅ 四平台推送完成!"
 echo ""
 echo "AtomGit: $ATOMGIT_URL"
 echo "GitHub:  $GITHUB_URL"
 echo "GitLab:  $GITLAB_URL"
+echo "GitCode:  $GITCODE_URL"
+
+

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../../services/calibration_service.dart';
 import '../../services/report_generator.dart';
+import '../../services/gmi_cloud_service.dart';
 import '../../domain/repositories/analytics_repository.dart';
 import '../../core/di/injection_container.dart' as di;
 
@@ -26,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _calibrationDate;
 
   final _calibrationService = di.sl<CalibrationService>();
+  final _gmiCloudService = di.sl<GmiCloudService>();
   bool _isCalibrating = false;
   double _calibProgress = 0;
   StreamSubscription? _calibSub;
@@ -145,6 +147,13 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('上传监测数据到云端'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _setupCloudSync(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_done),
+            title: const Text('GMI Cloud 连接测试'),
+            subtitle: const Text('发起 GMI Cloud 状态请求'),
+            trailing: const Icon(Icons.play_arrow),
+            onTap: () => _testGmiCloudConnection(context),
           ),
           ListTile(
             leading: const Icon(Icons.picture_as_pdf),
@@ -296,7 +305,10 @@ class _SettingsPageState extends State<SettingsPage> {
         content: const Text(
           '请在 Supabase 控制台创建项目，获取 URL 和 anon key。\n\n'
           '然后在 main.dart 中调用:\n'
-          'SupabaseSyncService.initialize(url: "...", anonKey: "...")',
+          'SupabaseSyncService.initialize(url: "...", anonKey: "...")\n\n'
+          '如果你的云服务使用 GMI Cloud，请把 API key 作为 Dart define 传入:\n'
+          'flutter run --dart-define=GMI_CLOUD_API_KEY=your_key\n\n'
+          '在 CI 中请将该 key 作为 secret 注入，然后通过 --dart-define 传递。',
         ),
         actions: [
           TextButton(
@@ -334,6 +346,45 @@ class _SettingsPageState extends State<SettingsPage> {
           SnackBar(content: Text('导出失败: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _testGmiCloudConnection(BuildContext context) async {
+    if (!_gmiCloudService.isConfigured) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'GMI Cloud 未配置，请通过 Dart define 提供 API key 和 Base URL。',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('正在测试 GMI Cloud 连接...')),
+      );
+    }
+
+    try {
+      final status = await _gmiCloudService.fetchStatus();
+      if (!mounted) return;
+
+      final message = status == null
+          ? 'GMI Cloud 请求失败，未返回有效状态。'
+          : 'GMI Cloud 连接成功：${status.toString()}';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('GMI Cloud 请求失败：$e')),
+      );
     }
   }
 

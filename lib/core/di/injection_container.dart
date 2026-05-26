@@ -13,6 +13,7 @@ import '../../services/feedback_service.dart';
 import '../../services/location_service.dart';
 import '../../services/calibration_service.dart';
 import '../../services/supabase_sync_service.dart';
+import '../../services/gmi_cloud_service.dart';
 import '../constants/app_constants.dart';
 
 final sl = GetIt.instance;
@@ -34,6 +35,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<CalibrationService>(
       () => CalibrationService(sampleRate: AppConstants.defaultSampleRate));
   sl.registerLazySingleton<SupabaseSyncService>(() => SupabaseSyncService());
+  sl.registerLazySingleton<GmiCloudService>(() => GmiCloudService());
 
   // ── 仓库 ──
   sl.registerLazySingleton<DeviceRepository>(

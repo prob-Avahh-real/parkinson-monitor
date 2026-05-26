@@ -51,6 +51,7 @@ dependencies:
 
   # Supabase cloud sync
   supabase_flutter: ^2.3.0
+  http: ^0.14.0
 
   # PDF export
   pdf: ^3.10.0

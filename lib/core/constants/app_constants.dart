@@ -30,6 +30,10 @@ class AppConstants {
   static const String keyLastDeviceId = 'last_device_id';
   static const String keyActivityMode = 'activity_mode';
 
+  // GMI Cloud API
+  static const String gmiCloudApiKeyDartDefine = 'GMI_CLOUD_API_KEY';
+  static const String gmiCloudBaseUrlDartDefine = 'GMI_CLOUD_BASE_URL';
+
   // 数据库
   static const String sessionsBox = 'sessions';
   static const String eventsBox = 'events';
