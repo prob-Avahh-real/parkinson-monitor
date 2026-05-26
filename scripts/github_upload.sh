@@ -49,9 +49,10 @@ if ! git remote | grep -q '^origin$'; then
     git remote add origin "$repo_url"
     echo "Added existing GitHub repository as origin: $repo_url"
   else
-    gh repo create "$repo_name" --${visibility} --description "$description" --source . --remote origin --push --confirm
-    echo "Created GitHub repository '$repo_name' and pushed branch '$current_branch'."
-    exit 0
+    gh repo create "$repo_name" --${visibility} --description "$description" --confirm
+    repo_url=$(gh repo view "$repo_name" --json sshUrl -q .sshUrl)
+    git remote add origin "$repo_url"
+    echo "Created GitHub repository '$repo_name' and added origin: $repo_url"
   fi
 fi
 
