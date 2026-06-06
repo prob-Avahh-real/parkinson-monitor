@@ -1,0 +1,19 @@
+# Coverage configuration for flutter test
+coverage:
+  ignore:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "**/main.dart"
+  
+  minimum_coverage: 80
+  
+  branches:
+    - main
+    - develop
+  
+  report:
+    - format: lcov
+      output: coverage/lcov.info
+    - format: html
+      output: coverage/html

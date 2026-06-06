@@ -1,0 +1,22 @@
+# ============================================================
+# Supabase 项目配置
+# 将此文件放在项目根目录，用 `supabase link` 关联项目
+# ============================================================
+
+PROJECT_ID = "your-parkinson-monitor-project"
+
+[functions]
+  enabled = true
+
+[functions.daily-analysis]
+  enabled = true
+  verify_jwt = false  # 由 pg_cron 触发，不需要 JWT
+
+[functions.weekly-analysis]
+  enabled = true
+  verify_jwt = false
+
+# 环境变量：在 Supabase 控制台 → Settings → API 中配置
+# DEEPSEEK_API_KEY = "sk-xxxxxxxxxxxxxxxxxxxx"
+# 通过命令行设置：
+# supabase secrets set DEEPSEEK_API_KEY=sk-your-key-here

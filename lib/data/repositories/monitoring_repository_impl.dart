@@ -1,24 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:sensors_plus/sensors_plus.dart' show accelerometerEventStream;
 import '../../domain/repositories/monitoring_repository.dart';
-import '../../domain/repositories/analytics_repository.dart';
 import '../../domain/entities/sensor_reading.dart';
 import '../../domain/entities/detection_event.dart';
 import '../../domain/entities/monitoring_session.dart';
 import '../../domain/entities/movement_disorder_type.dart';
 import '../../core/constants/app_constants.dart';
+import '../models/session_model.dart';
 import '../../services/ble_service.dart';
 import '../../services/detection_engine.dart';
 import '../../services/location_service.dart';
 
-/// 监测仓库实现 — GPS 集成 + 会话持久化
+/// 监测仓库实现 — 活动监测 + 历史查询
 class MonitoringRepositoryImpl implements MonitoringRepository {
   final BleService _bleService;
   final DetectionEngine _detectionEngine;
   final LocationService _locationService;
-  final AnalyticsRepository _analyticsRepo;
   final _uuid = const Uuid();
 
   MonitoringSession? _currentSession;
@@ -30,11 +30,12 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
   final _detectionController = StreamController<DetectionEvent>.broadcast();
 
   MonitoringRepositoryImpl({
-    required this._bleService,
-    required this._detectionEngine,
-    required this._locationService,
-    required this._analyticsRepo,
-  }) {
+    required BleService bleService,
+    required DetectionEngine detectionEngine,
+    required LocationService locationService,
+  })  : _bleService = bleService,
+        _detectionEngine = detectionEngine,
+        _locationService = locationService {
     _detectionEngine.detectionStream.listen((event) {
       _detectionController.add(event);
       if (_currentSession != null) {
@@ -44,6 +45,17 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
       }
     });
   }
+
+  // ── Hive helper ──
+
+  Future<Box<String>> get _sessionsBox async {
+    if (!Hive.isBoxOpen(AppConstants.sessionsBox)) {
+      return await Hive.openBox<String>(AppConstants.sessionsBox);
+    }
+    return Hive.box<String>(AppConstants.sessionsBox);
+  }
+
+  // ── 活动监测 ──
 
   @override
   Stream<SensorReading> get sensorStream => _sensorController.stream;
@@ -61,7 +73,6 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
   Future<MonitoringSession> startSession(ActivityMode mode) async {
     if (_isMonitoring) await stopSession();
 
-    // 加载校准后的阈值
     await _loadCalibratedThresholds();
 
     _currentSession = MonitoringSession(
@@ -71,14 +82,18 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
     );
     _isMonitoring = true;
 
-    // 户外模式启动 GPS
     if (mode == ActivityMode.outdoor) {
       await _locationService.startTracking();
     }
 
-    // BLE 或手机传感器
     if (_bleService.isConnected) {
+      // BLE sensors may fire at 50-100 Hz.  Downsample to ~20 Hz so the
+      // detection engine and UI are not overwhelmed.
+      DateTime _lastBleSample = DateTime.now();
       _bleSub = _bleService.sensorData.listen((data) {
+        final now = DateTime.now();
+        if (now.difference(_lastBleSample).inMilliseconds < 50) return;
+        _lastBleSample = now;
         final reading = SensorReading(
           timestamp: DateTime.now(),
           accelX: data['accelX'] ?? 0,
@@ -106,9 +121,15 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
   }
 
   void _startPhoneSensors() {
+    // sensors_plus accelerometer at 50 Hz (20 ms period).  Downsample
+    // to ~20 Hz so the detection pipeline is not overloaded.
+    DateTime _lastPhoneSample = DateTime.now();
     _phoneAccelSub = accelerometerEventStream(
         samplingPeriod: const Duration(milliseconds: 20))
         .listen((event) {
+      final now = DateTime.now();
+      if (now.difference(_lastPhoneSample).inMilliseconds < 50) return;
+      _lastPhoneSample = now;
       final reading = SensorReading(
         timestamp: DateTime.now(),
         accelX: event.x,
@@ -134,7 +155,6 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
     _isMonitoring = false;
     _detectionEngine.reset();
 
-    // 停止 GPS 并获取路径
     double gpsDistance = 0;
     List<GpsPoint> gpsPath = [];
     if (_locationService.isTracking) {
@@ -151,7 +171,9 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
       );
 
       // 持久化到 Hive
-      await _analyticsRepo.saveSession(_currentSession!);
+      final box = await _sessionsBox;
+      final json = SessionModel.toJson(_currentSession!);
+      await box.put(_currentSession!.id, jsonEncode(json));
     }
 
     return _currentSession ??
@@ -165,15 +187,91 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
         );
   }
 
-  /// 从 Hive 加载个性化阈值并应用到检测引擎
   Future<void> _loadCalibratedThresholds() async {
     try {
       final box = Hive.box(AppConstants.settingsBox);
       final calibrated = box.get('calibrated', defaultValue: false) as bool;
       if (!calibrated) return;
-
-      // 阈值已通过 CalibrationService 保存
-      // DetectionEngine 使用静态阈值，此处仅记录日志
     } catch (_) {}
+  }
+
+  // ── 历史查询 ──
+
+  @override
+  Future<List<MonitoringSession>> getSessions({
+    int limit = 30,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final box = await _sessionsBox;
+    final sessions = <MonitoringSession>[];
+    final keys = box.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    for (final key in keys) {
+      if (sessions.length >= limit) break;
+      final jsonStr = box.get(key);
+      if (jsonStr != null) {
+        try {
+          final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final session = SessionModel.fromJson(json);
+          if (from != null && session.startTime.isBefore(from)) continue;
+          if (to != null && session.startTime.isAfter(to)) continue;
+          sessions.add(session);
+        } catch (_) {}
+      }
+    }
+    return sessions;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSummary({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final sessions = await getSessions(from: from, to: to);
+
+    int totalFog = 0, totalTremor = 0, totalBrady = 0;
+    Duration totalDuration = Duration.zero;
+
+    for (final s in sessions) {
+      totalFog += s.fogCount;
+      totalTremor += s.tremorCount;
+      totalBrady += s.bradykinesiaCount;
+      totalDuration += s.duration;
+    }
+
+    return {
+      'periodStart': from.toIso8601String(),
+      'periodEnd': to.toIso8601String(),
+      'totalSessions': sessions.length,
+      'totalFogEvents': totalFog,
+      'totalTremorEvents': totalTremor,
+      'totalBradyEvents': totalBrady,
+      'totalDurationMinutes': totalDuration.inMinutes,
+      'avgSessionMinutes': sessions.isNotEmpty
+          ? (totalDuration.inMinutes / sessions.length).round()
+          : 0,
+    };
+  }
+
+  @override
+  Future<String> exportCsv(MonitoringSession session) async {
+    final buffer = StringBuffer();
+    buffer.writeln(
+        'timestamp,type,severity,confidence,freeze_index,tremor_freq,movement_amp');
+    for (final event in session.events) {
+      buffer.writeln(
+        '${event.timestamp.toIso8601String()},${event.type.name},${event.severity.name},'
+        '${event.confidence},${event.freezeIndex ?? ""},${event.tremorFrequency ?? ""},${event.movementAmplitude ?? ""}',
+      );
+    }
+    return buffer.toString();
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    final box = await _sessionsBox;
+    await box.delete(sessionId);
   }
 }

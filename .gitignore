@@ -21,7 +21,45 @@ ios/.symlinks/
 macos/Pods/
 macos/Flutter/ephemeral/
 
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
 # Misc
 *.log
-*.pyc
 .DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Deliverables (screenshots, videos)
+deliverables/
+
+# Generated docs
+AGENTS.md
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Code coverage
+coverage/
+
+# Flutter generated
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata

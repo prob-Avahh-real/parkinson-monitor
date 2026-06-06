@@ -1,0 +1,20 @@
+{
+  "name": "parkinson-monitor",
+  "version": "1.0.0",
+  "description": "帕金森综合征运动障碍可穿戴监测应用 — 通过 BLE 可穿戴设备实时检测步态冻结、静止性震颤和运动迟缓。",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitcode.net/momo_Avah/parkinson-monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

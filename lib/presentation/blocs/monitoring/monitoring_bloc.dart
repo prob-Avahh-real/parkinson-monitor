@@ -13,6 +13,8 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
   final MonitoringRepository _monitoringRepository;
   StreamSubscription? _sensorSub;
   StreamSubscription? _detectionSub;
+  DateTime _lastSensorEmit = DateTime.now();
+  static const _sensorThrottle = Duration(milliseconds: 100); // ~10 Hz
 
   MonitoringBloc({required this._monitoringRepository}) : super(const MonitoringState()) {
     on<StartMonitoring>(_onStart);
@@ -46,6 +48,10 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
   }
 
   void _onSensorData(SensorDataReceived event, Emitter<MonitoringState> emit) {
+    // Throttle: sensors stream at ~50-100Hz; emit state at ~10Hz max
+    final now = DateTime.now();
+    if (now.difference(_lastSensorEmit) < _sensorThrottle) return;
+    _lastSensorEmit = now;
     emit(state.copyWith(latestReading: event.reading));
   }
 
