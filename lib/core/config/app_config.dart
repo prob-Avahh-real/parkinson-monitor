@@ -30,64 +30,98 @@ class AppConfig {
     }
   }
 
-  // Environment
-  static String get environment =>
-      dotenv.env['ENVIRONMENT'] ?? 'development';
+  // Envimport 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
-  static bool get isDevelopment => environment == 'development';
-  static bool get isProduction => environment == 'production';
+class AppConfig {
+  static const String _meimport 'package:flutter/foundation.get isProduction =
+class AppConfig {
+  static const Stringaba  static const Sng
+  static Future<void> load() async {'SUPA    await dotenv.load(fileName: _enet    _validate();
+  }
 
-  // Supabase
-  static String get supabaseUrl =>
-      dotenv.env['SUPABASE_URL'] ?? '';
-  static String get supabaseAnonKey =>
-      dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  /// 校验必要?B  }
 
-  // API Configuration
+  /// 校??
+ ';
+  statiPI Configuration
   static int get apiTimeout =>
-      int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000;
-  static int get apiRetryCount =>
-      int.tryParse(dotenv.env['API_RETRY_COUNT'] ?? '3') ?? 3;
+      int.tryPa    final warnings = <StriT'
+    if (supabaseUrl.isEmpty tic i      warnings.add('SUPABASE_URL 未配置，云v.    }
 
-  // Feature Flags
-  static bool get enableCloudSync =>
-      dotenv.env['ENABLE_CLOUD_SYNC'] == 'true';
-  static bool get enableAnalytics =>
-      dotenv.env['ENABLE_ANALYTICS'] == 'true';
-  static bool get enableCrashReporting =>
-      dotenv.env['ENABLE_CRASH_REPORTING'] == 'true';
+    if (sentryDsn.isEmpty && enableCrashReporting) {
+      warnings.add('SENTRY_DSN 未配? dotenv.      warnings.add('SENTRY_DSN 未配置，c bool get    }
 
-  // Monitoring Configuration
-  static String get sentryDsn =>
-      dotenv.env['SENTRY_DSN'] ?? '';
-  static String get sentryEnvironment =>
-      dotenv.env['SENTRY_ENVIRONMENT'] ?? environment;
-  static double get sentryTracesSampleRate =>
-      double.tryParse(dotenv.env['SENTRY_TRACES_SAMPLE_RATE'] ?? '0.1') ?? 0.1;
+    if (environment.isEmpty) {
+      warnings.add('ENVIRONM;
 
-  // Detection Thresholds
-  static double get freezeIndexThreshold =>
-      double.tryParse(dotenv.env['FREEZE_INDEX_THRESHOLD'] ?? '1.8') ?? 1.8;
-  static double get tremorFrequencyMin =>
-      double.tryParse(dotenv.env['TREMOR_FREQUENCY_MIN'] ?? '4.0') ?? 4.0;
-  static double get tremorFrequencyMax =>
-      double.tryParse(dotenv.env['TREMOR_FREQUENCY_MAX'] ?? '6.0') ?? 6.0;
-  static double get tremorPowerThreshold =>
-      double.tryParse(dotenv.env['TREMOR_POWER_THRESHOLD'] ?? '0.3') ?? 0.3;
-  static double get bradykinesiaAmplitudeThreshold =>
-      double.tryParse(dotenv.env['BRADYKINESIA_AMPLITUDE_THRESHOLD'] ?? '0.15') ?? 0.15;
-  static int get bradykinesiaCadenceThreshold =>
-      int.tryParse(dotenv.env['BRADYKINESIA_CADENCE_THRESHOLD'] ?? '40') ?? 40;
-  static double get bradykinesiaAngularVelocityThreshold =>
-      double.tryParse(dotenv.env['BRADYKINESIA_ANGULAR_VELOCITY_THRESHOLD'] ?? '0.3') ?? 0.3;
+   ati      warnings.add('ENVIRONMEng    }
 
-  // Sampling Configuration
-  static int get sensorSamplingRate =>
-      int.tryParse(dotenv.env['SENSOR_SAMPLING_RATE'] ?? '50') ?? 50;
-  static int get detectionWindowSize =>
-      int.tryParse(dotenv.env['DETECTION_WINDOW_SIZE'] ?? '300') ?? 300;
-  static int get confirmationFrames =>
-      int.tryParse(dotenv.env['CONFIRMATION_FRAMES'] ?? '3') ?? 3;
-  static int get debounceDurationMs =>
-      int.tryParse(dotenv.env['DEBOUNCE_DURATION_MS'] ?? '3000') ?? 3000;
+    for (final warning in warnings) {
+      debugPrint// Monit
+   g C  figuration
+  static String get sentr    }
+  }
+
+  // Envimport 'package:flu ?? '';
+  }
+at
+  Stimport 'package:flutter/foundation.dart';
+
+class AppConfig RO
+class AppConfig {
+  static const Stringget  static const Splclass AppConfig {
+  static const Stringaba  static const Sng
+  static Future<1'  static const Sic  static Future<void> load() async {'SUPA.e  }
+
+  /// 校验必要?B  }
+
+  /// 校??
+ ';
+  statiPI Configuration
+  static int get apiThr
+ hol
+  /// 校??
+ ';
+  starse ';
+  stati['  EEZE_INDEX_THRESHOLD'] ??       int.tryPa    final warne     if (supabaseUrl.isEmpty tic i      warPa
+    if (sentryDsn.isEmpty && enableCrashReporting) {
+      warnings.add('SENTRY_DSN ?en      warnings.aouble.tryParse(dotenv.env['TREMOR_FRE
+    if (environment.isEmpty) {
+      warnings.add('ENVIRONM;
+
+   ati      warnings.add('ENVIRONMEng    env      warnings.add('ENVIRONM; '
+   ati      warnings.add('Ee g
+    for (final warning in warnings)       d      debugPrint// Monit
+   g C  figSI   g C  figuration
+  st ?  s0.15') ?? 0.15;
+  }
+
+  // Envimport 'package:Ca
+ nce  }
+at
+  Stimport 'package:flutteotatv. nv
+class AppConfig RO
+class AppConfig {
+  stat?? cla
+  static double  static const SaA  static const Stringaba  static const Sng
+  static Futurev[  static Future<1'  static const Sic  sta] 
+  /// 校验必要?B  }
+
+  /// 校??
+ ';
+  statiPI Configuration
+  static int e =
+  /// 校??
+ ';
+  staten ';
+  statiOR  AM  static in] ?? '50') ?? hol
+  /// 校??
+ ';
+de  /ti ';
+  starse   
+   stati[' ry    if (sentryDsn.isEmpty && enableCrashReporting) {
+      warnings.add('SENTRY_DSN ?en      warnings.aouble.yP      warnv.env['CONFIRMATION_FRAMES'] ?? '3') ?? 3;
+    if (environment.isEmpty) {
+      warnings.add('ENVIRe(dotenv.env['DEBOUNCE_DURATION_MS      warni') ?? 3000;
 }

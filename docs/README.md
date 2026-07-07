@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains project documentation including architecture decision records (ADRs), deployment guides, and API documentation.
+This directory contains project documentation including architecture decision records (ADRs) and deployment guides.
 
 ## Contents
 
@@ -11,17 +11,6 @@ This directory contains project documentation including architecture decision re
 ### Deployment Guides
 - [Android Deployment](deployment/android.md) - Guide for building and deploying to Google Play Store
 - [iOS Deployment](deployment/ios.md) - Guide for building and deploying to App Store
-
-### API Documentation
-Generate API documentation using dartdoc:
-```bash
-make docs
-```
-
-Serve documentation locally:
-```bash
-make docs-serve
-```
 
 ## Adding New ADRs
 

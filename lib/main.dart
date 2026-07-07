@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/config/app_config.dart';
+import 'core/config/gmi_cloud_config.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/theme/app_theme.dart';
-import 'core/utils/log.dart';
 import 'presentation/blocs/device/device_bloc.dart';
 import 'presentation/blocs/monitoring/monitoring_bloc.dart';
 import 'presentation/pages/home_page.dart';
@@ -13,26 +13,28 @@ import 'services/monitoring_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Production: suppress debug-level logs
-  if (!AppConfig.isDevelopment) Log.setLevel(Level.info);
-
+  // Load environment configuration
   await AppConfig.load();
 
-  if (AppConfig.enableCrashReporting) {
+  // Initialize monitoring services
+  if (AppConfig.enableCrashReporting || AppConfig.enableAnalytics) {
     await MonitoringService.initialize();
   }
 
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  Log.info('App', 'Starting', {
-    'environment': AppConfig.environment,
-    'cloudSync': AppConfig.enableCloudSync,
-    'analytics': AppConfig.enableAnalytics,
-    'crashReporting': AppConfig.enableCrashReporting,
-  });
+  final gmiApiKey = GmiCloudConfig.apiKey;
+  if (gmiApiKey.isNotEmpty) {
+    debugPrint('GMI Cloud API key loaded from build config.');
+  }
 
+  debugPrint('Environment: ${AppConfig.environment}');
+  debugPrint('Cloud Sync Enabled: ${AppConfig.enableCloudSync}');
+  debugPrint('Analytics Enabled: ${AppConfig.enableAnalytics}');
+  debugPrint('Crash Reporting Enabled: ${AppConfig.enableCrashReporting}');
+
+  // 初始化依赖注入
   await di.initDependencies();
-  Log.info('App', 'Dependencies initialized');
 
   runApp(const ParkinsonMonitorApp());
 }

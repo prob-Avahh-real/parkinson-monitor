@@ -8,25 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Enhanced CI/CD pipeline with Android/iOS build jobs
-- Code coverage reporting with Codecov integration
-- Dependency scanning and outdated package checks
-- Automated code formatting checks in CI
-- Pre-commit hooks for code quality enforcement
 - Environment configuration with flutter_dotenv
-- Environment-specific configs (.env.development, .env.production)
-- AppConfig class for centralized environment management
-- Widget tests for home_page and monitoring_page
-- Integration tests for critical app flows
-- Coverage configuration with minimum thresholds
+- Sentry crash reporting integration
+- Firebase Analytics and Performance monitoring
+- Automated release workflow for Android/iOS builds
+- Deployment guides for Android and iOS platforms
+- Architecture Decision Records (ADRs) for major decisions
 - Makefile for common development tasks
-- CONTRIBUTING.md with development guidelines
-- very_good_analysis package for stricter linting
+- very_good_analysis for stricter code linting
+- AppConfig class for centralized environment management
+- MonitoringService for crash reporting and analytics
 
 ### Changed
-- Updated analysis_options.yaml to use very_good_analysis
-- Enhanced CI/CD to run on both main and develop branches
-- Updated README with new development workflow
+- Updated CI/CD to use Flutter cache for faster builds
+- Enhanced analysis_options.yaml with very_good_analysis
+- Updated README with production setup instructions
 - Added .env to Flutter assets
 
 ### Fixed

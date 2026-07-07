@@ -111,14 +111,12 @@ In Organizer:
 
 ### Production
 ```bash
-cp .env.production .env
 # Edit .env with production values
 flutter build ios --release
 ```
 
 ### Development
 ```bash
-cp .env.development .env
 # Edit .env with development values
 flutter build ios --debug
 ```
@@ -139,10 +137,13 @@ Edit `ios/Runner/Info.plist`:
 <string>1</string>
 ```
 
-### Automatic Versioning
-Use the release workflow:
+### Manual Versioning
 ```bash
-make release
+# Tag the release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# This triggers the release workflow automatically
 ```
 
 ## Troubleshooting
