@@ -17,6 +17,10 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
+      # pubspec.yaml declares .env as an asset, so the asset bundle needs the
+      # file to exist even for analysis.
+      - name: Prepare .env file
+        run: cp .env.ci .env
       # Style/info lints are reported for guidance but are not fatal;
       # errors and warnings still fail the job.
       - run: flutter analyze --no-fatal-infos
@@ -31,8 +35,19 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      # pubspec.yaml declares .env as an asset, so the asset bundle
-      # (built even for `flutter test`) requires the file to exist.
+      # pubspec.yaml declares .env as an asset, so the asset bundle needs it.
       - name: Prepare .env file
         run: cp .env.ci .env
-      - run: flutter test
+      # test/screenshots/ holds pixel-comparison golden tests. Their reference
+      # PNGs must be regenerated after any UI change and are host-rendering
+      # sensitive, so they are excluded here. Regenerate locally with:
+      #   flutter test --update-goldens test/screenshots
+      - name: Run unit and widget tests
+        run: >
+          flutter test
+          test/core
+          test/data
+          test/domain
+          test/presentation
+          test/services
+          test/widget_test.dart

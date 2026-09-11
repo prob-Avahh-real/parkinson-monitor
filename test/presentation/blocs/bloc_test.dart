@@ -29,10 +29,12 @@ void main() {
       expect(updated.status, 'fog');
     });
 
-    test('copyWith for recentEvents creates new list', () {
+    test('copyWith keeps recentEvents when not provided', () {
       final state = MonitoringState(recentEvents: const []);
       final updated = state.copyWith(isMonitoring: true);
-      expect(updated.recentEvents, isNot(same(state.recentEvents)));
+      expect(updated.isMonitoring, isTrue);
+      // copyWith only replaces the fields that are explicitly passed.
+      expect(updated.recentEvents, same(state.recentEvents));
     });
   });
 

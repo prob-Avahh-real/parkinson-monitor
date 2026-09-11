@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkinson_monitor/domain/entities/detection_event.dart';
 import 'package:parkinson_monitor/domain/entities/movement_disorder_type.dart';
-import 'package:parkinson_monitor/data/models/detection_event_adapter.dart';
 import 'package:parkinson_monitor/data/models/session_model.dart';
 import 'package:parkinson_monitor/domain/entities/monitoring_session.dart';
 
@@ -16,7 +15,9 @@ void main() {
         confidence: 0.75,
         freezeIndex: 2.5,
       );
-      expect(event.props.length, 8);
+      // id, timestamp, type, severity, confidence,
+      // durationSeconds, freezeIndex, tremorFrequency, movementAmplitude
+      expect(event.props.length, 9);
       expect(event.props[0], 'evt-1');
       expect(event.props[2], MovementDisorderType.freezingOfGait);
     });
@@ -108,8 +109,8 @@ void main() {
   });
 
   group('MovementDisorderType', () {
-    test('has three types', () {
-      expect(MovementDisorderType.values.length, 4); // includes unknown
+    test('has five types', () {
+      expect(MovementDisorderType.values.length, 5);
     });
   });
 
