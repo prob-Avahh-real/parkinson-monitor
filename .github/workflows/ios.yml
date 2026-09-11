@@ -1,0 +1,71 @@
+name: iOS Build
+
+# Builds an unsigned iOS .ipa on a GitHub-hosted macOS runner.
+# No local Xcode or disk space required — the artifact is downloadable.
+#
+# Unsigned IPA = cannot be installed directly on a device as-is; it must be
+# re-signed (e.g. Sideloadly with a free Apple ID) or built with signing
+# secrets configured for real device / App Store distribution.
+
+on:
+  push:
+    branches: [ci/ios-cloud-build, main]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    name: Build iOS unsigned
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          xcodebuild -version
+          pod --version
+
+      - name: Prepare CI env file
+        run: cp .env.ci .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze || true
+
+      - name: Build iOS release without codesign
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          test -d "$APP_PATH"
+          rm -rf Payload Runner-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/Runner.app
+          zip -qry Runner-unsigned.ipa Payload
+          ls -lh Runner-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: parkinson-monitor-ios-unsigned-ipa
+          path: Runner-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Runner.app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: parkinson-monitor-ios-runner-app
+          path: build/ios/iphoneos/Runner.app
+          if-no-files-found: error
+          retention-days: 30
