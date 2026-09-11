@@ -61,10 +61,13 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   # Monitoring & Observability
-  sentry_flutter: ^8.0.0
-  firebase_core: ^3.0.0
-  firebase_analytics: ^11.0.0
-  firebase_performance: ^0.10.0
+  # NOTE: sentry_flutter / firebase_* removed on the iOS cloud-build branch.
+  # Their native iOS dependencies (Sentry Cocoa Swift API mismatch + Firebase's
+  # ~14 pod tree incl. grpc/abseil/app-check) broke `flutter build ios`, and both
+  # are disabled in the CI config (.env.ci). The app runs fully offline with
+  # local Hive storage.
+  # To re-enable: restore these deps, add ios/Runner/GoogleService-Info.plist,
+  # and set ENABLE_ANALYTICS / ENABLE_CRASH_REPORTING back to true in .env.
 
 dev_dependencies:
   flutter_test:
