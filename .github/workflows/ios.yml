@@ -1,14 +1,13 @@
 name: iOS Build
 
-# Builds an unsigned iOS artifact on a GitHub-hosted macOS runner.
+# Builds an iOS artifact on a GitHub-hosted macOS runner.
 # No local Xcode, disk space, or Apple Developer account required.
 #
-#  1. tries a device (iphoneos) build with code signing disabled -> unsigned .ipa
+#  1. device (iphoneos) build with code signing fully disabled -> unsigned .ipa
 #  2. falls back to a simulator build -> Runner.app (signing never required)
 #
-# NOTE: an unsigned .ipa cannot be installed on a device as-is; it must be
-# re-signed (e.g. Sideloadly with a free Apple ID) or built with signing
-# secrets for device / App Store distribution.
+# NOTE: an unsigned .ipa cannot be installed on a device as-is; re-sign it first
+# (e.g. Sideloadly with a free Apple ID) or configure signing secrets.
 
 on:
   push:
@@ -58,28 +57,36 @@ jobs:
           p.write_text(s)
           print("patched" if s != b else "NO CHANGE")
           PY
-          grep -c "CODE_SIGNING_ALLOWED = NO" ios/Runner.xcodeproj/project.pbxproj
 
-      - name: Build iOS release without codesign
+      - name: Prepare iOS build (flutter, signing disabled)
         run: |
           set +e
           flutter build ios --release --no-codesign
-          rc=$?
-          echo "flutter build ios exit code: $rc"
-          if [ -d build/ios/iphoneos/Runner.app ]; then
-            echo "Runner.app produced -> usable"
-          else
-            echo "no device app produced -> simulator fallback will handle it"
-          fi
+          echo "flutter build ios exit: $?"
+          exit 0
+
+      - name: Build with xcodebuild directly (signing hard-disabled)
+        run: |
+          set +e
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios_dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            build 2>&1 | tail -60
+          echo "xcodebuild exit: ${PIPESTATUS[0]}"
+          echo "== Runner.app candidates =="
+          find build -maxdepth 6 -name "Runner.app" -print 2>/dev/null
           exit 0
 
       - name: Simulator fallback
         run: |
-          if [ -d build/ios/iphoneos/Runner.app ]; then
-            echo "Device build present; skipping simulator fallback."
+          if find build -maxdepth 6 -name "Runner.app" -print -quit | grep -q .; then
+            echo "A Runner.app exists; skipping simulator fallback."
           else
-            echo "Building for simulator (never needs signing)..."
-            flutter build ios --simulator --release
+            echo "No device app produced; building for simulator (debug)..."
+            flutter build ios --simulator --debug
           fi
 
       - name: Package artifacts
@@ -87,19 +94,21 @@ jobs:
           set -e
           rm -rf dist Payload
           mkdir -p dist
-          if [ -d build/ios/iphoneos/Runner.app ]; then
-            echo "Packaging unsigned device IPA"
+          DEV=$(find build -maxdepth 6 -name "Runner.app" -path "*Release-iphoneos*" -print -quit)
+          SIM=$(find build -maxdepth 6 -name "Runner.app" -path "*iphonesimulator*" -print -quit)
+          if [ -n "$DEV" ]; then
+            echo "device app -> $DEV"
             mkdir -p Payload
-            cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
-            zip -qry dist/parkinson-monitor-unsigned.ipa Payload
+            cp -R "$DEV" Payload/Runner.app
+            zip -qry dist/parkinson-monitor-device-unsigned.ipa Payload
           fi
-          if [ -d build/ios/iphonesimulator/Runner.app ]; then
-            echo "Packaging simulator app"
-            ( cd build/ios/iphonesimulator && zip -qry "$GITHUB_WORKSPACE/dist/parkinson-monitor-simulator.zip" Runner.app )
+          if [ -n "$SIM" ]; then
+            echo "simulator app -> $SIM"
+            ( cd "$(dirname "$SIM")" && zip -qry "$GITHUB_WORKSPACE/dist/parkinson-monitor-simulator.zip" Runner.app )
           fi
-          ls -lh dist/
+          ls -lh dist/ || true
           if [ -z "$(ls -A dist)" ]; then
-            echo "no iOS artifacts were produced"
+            echo "no iOS artifacts produced"
             exit 1
           fi
 
