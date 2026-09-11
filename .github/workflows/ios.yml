@@ -1,0 +1,130 @@
+name: iOS Build
+
+# Builds an iOS artifact on a GitHub-hosted macOS runner.
+# No local Xcode, disk space, or Apple Developer account required.
+#
+#  1. device (iphoneos) build with code signing fully disabled -> unsigned .ipa
+#  2. falls back to a simulator build -> Runner.app (signing never required)
+#
+# NOTE: an unsigned .ipa cannot be installed on a device as-is; re-sign it first
+# (e.g. Sideloadly with a free Apple ID) or configure signing secrets.
+
+on:
+  push:
+    branches: [ci/ios-cloud-build, main]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    name: Build iOS unsigned
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          xcodebuild -version
+          pod --version
+
+      - name: Prepare CI env file
+        run: cp .env.ci .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Disable Xcode code signing for CI
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path("ios/Runner.xcodeproj/project.pbxproj")
+          s = p.read_text()
+          b = s
+          s = s.replace(
+              "CODE_SIGN_STYLE = Automatic;",
+              "CODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;",
+          )
+          s = s.replace(
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";',
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";',
+          )
+          p.write_text(s)
+          print("patched" if s != b else "NO CHANGE")
+          PY
+
+      - name: Prepare iOS build (flutter, signing disabled)
+        run: |
+          set +e
+          flutter build ios --release --no-codesign
+          echo "flutter build ios exit: $?"
+          exit 0
+
+      - name: Build with xcodebuild directly (signing hard-disabled)
+        run: |
+          set +e
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios_dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS="" \
+            build 2>&1 | tail -60
+          echo "xcodebuild exit: ${PIPESTATUS[0]}"
+          echo "== Runner.app candidates =="
+          find build -maxdepth 6 -name "Runner.app" -print 2>/dev/null
+          exit 0
+
+      - name: Simulator fallback
+        run: |
+          if find build -maxdepth 6 -name "Runner.app" -print -quit | grep -q .; then
+            echo "A Runner.app exists; skipping simulator fallback."
+          else
+            echo "No device app produced; building for simulator (debug)..."
+            flutter build ios --simulator --debug
+          fi
+
+      - name: Package artifacts
+        run: |
+          set -e
+          rm -rf dist Payload
+          mkdir -p dist
+          DEV=$(find build -maxdepth 6 -name "Runner.app" -path "*Release-iphoneos*" -print -quit)
+          SIM=$(find build -maxdepth 6 -name "Runner.app" -path "*iphonesimulator*" -print -quit)
+          if [ -n "$DEV" ]; then
+            echo "device app -> $DEV"
+            mkdir -p Payload
+            cp -R "$DEV" Payload/Runner.app
+            zip -qry dist/parkinson-monitor-device-unsigned.ipa Payload
+          fi
+          if [ -n "$SIM" ]; then
+            echo "simulator app -> $SIM"
+            ( cd "$(dirname "$SIM")" && zip -qry "$GITHUB_WORKSPACE/dist/parkinson-monitor-simulator.zip" Runner.app )
+          fi
+          ls -lh dist/ || true
+          if [ -z "$(ls -A dist)" ]; then
+            echo "no iOS artifacts produced"
+            exit 1
+          fi
+          for f in dist/*; do
+            sz=$(stat -f%z "$f")
+            echo "$f -> $sz bytes"
+            if [ "$sz" -lt 1000000 ]; then
+              echo "ARTIFACT SANITY CHECK FAILED: $f is only $sz bytes"
+              echo "This means the app was not fully packaged (Dart compile failed?)."
+              exit 1
+            fi
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: parkinson-monitor-ios
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30

@@ -8,7 +8,6 @@ import 'core/theme/app_theme.dart';
 import 'presentation/blocs/device/device_bloc.dart';
 import 'presentation/blocs/monitoring/monitoring_bloc.dart';
 import 'presentation/pages/home_page.dart';
-import 'services/monitoring_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +15,8 @@ void main() async {
   // Load environment configuration
   await AppConfig.load();
 
-  // Initialize monitoring services
-  if (AppConfig.enableCrashReporting || AppConfig.enableAnalytics) {
-    await MonitoringService.initialize();
-  }
-
+  // NOTE: cloud monitoring (Sentry / Firebase) was removed on this build branch
+  // (see pubspec.yaml). The app runs fully offline with local Hive storage.
   GoogleFonts.config.allowRuntimeFetching = false;
 
   final gmiApiKey = GmiCloudConfig.apiKey;
@@ -30,8 +26,6 @@ void main() async {
 
   debugPrint('Environment: ${AppConfig.environment}');
   debugPrint('Cloud Sync Enabled: ${AppConfig.enableCloudSync}');
-  debugPrint('Analytics Enabled: ${AppConfig.enableAnalytics}');
-  debugPrint('Crash Reporting Enabled: ${AppConfig.enableCrashReporting}');
 
   // 初始化依赖注入
   await di.initDependencies();

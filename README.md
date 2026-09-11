@@ -88,23 +88,13 @@ make test
 
 ### Supabase 云同步 (可选)
 
-在 `.env` 文件中配置：
+在 `main.dart` 中添加：
 
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-ENABLE_CLOUD_SYNC=true
-```
-
-### 监控配置 (生产环境)
-
-在 `.env` 文件中配置：
-
-```bash
-SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
-FIREBASE_ENABLED=true
-ENABLE_CRASH_REPORTING=true
-ENABLE_ANALYTICS=true
+```dart
+await SupabaseSyncService.initialize(
+  url: 'YOUR_SUPABASE_URL',
+  anonKey: 'YOUR_ANON_KEY',
+);
 ```
 
 ### 检测阈值自定义
@@ -130,24 +120,6 @@ ENABLE_ANALYTICS=true
 
 - **方法**: 多维度评估 (运动幅度 + 步频 + 手臂摆动)
 - **数据源**: 加速度幅值 + 垂直加速度 + 角速度
-
-## 部署
-
-详细的部署指南请参考：
-- [Android 部署指南](docs/deployment/android.md)
-- [iOS 部署指南](docs/deployment/ios.md)
-
-### 发布流程
-
-```bash
-# 更新版本号
-# 编辑 pubspec.yaml: version: 1.0.0+1
-
-# 创建发布标签
-make release
-
-# 这将触发 GitHub Actions 自动构建并发布
-```
 
 ## 免责声明
 
