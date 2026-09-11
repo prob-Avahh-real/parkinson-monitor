@@ -1,11 +1,14 @@
 name: iOS Build
 
-# Builds an unsigned iOS .ipa on a GitHub-hosted macOS runner.
-# No local Xcode or disk space required — the artifact is downloadable.
+# Builds an unsigned iOS artifact on a GitHub-hosted macOS runner.
+# No local Xcode, disk space, or Apple Developer account required.
 #
-# Unsigned IPA = cannot be installed directly on a device as-is; it must be
+#  1. tries a device (iphoneos) build with code signing disabled -> unsigned .ipa
+#  2. falls back to a simulator build -> Runner.app (signing never required)
+#
+# NOTE: an unsigned .ipa cannot be installed on a device as-is; it must be
 # re-signed (e.g. Sideloadly with a free Apple ID) or built with signing
-# secrets configured for real device / App Store distribution.
+# secrets for device / App Store distribution.
 
 on:
   push:
@@ -37,35 +40,73 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
-        run: flutter analyze || true
+      - name: Disable Xcode code signing for CI
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path("ios/Runner.xcodeproj/project.pbxproj")
+          s = p.read_text()
+          b = s
+          s = s.replace(
+              "CODE_SIGN_STYLE = Automatic;",
+              "CODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;",
+          )
+          s = s.replace(
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";',
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";',
+          )
+          p.write_text(s)
+          print("patched" if s != b else "NO CHANGE")
+          PY
+          grep -c "CODE_SIGNING_ALLOWED = NO" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Build iOS release without codesign
-        run: flutter build ios --release --no-codesign
+        run: |
+          set +e
+          flutter build ios --release --no-codesign
+          rc=$?
+          echo "flutter build ios exit code: $rc"
+          if [ -d build/ios/iphoneos/Runner.app ]; then
+            echo "Runner.app produced -> usable"
+          else
+            echo "no device app produced -> simulator fallback will handle it"
+          fi
+          exit 0
 
-      - name: Package unsigned IPA
+      - name: Simulator fallback
+        run: |
+          if [ -d build/ios/iphoneos/Runner.app ]; then
+            echo "Device build present; skipping simulator fallback."
+          else
+            echo "Building for simulator (never needs signing)..."
+            flutter build ios --simulator --release
+          fi
+
+      - name: Package artifacts
         run: |
           set -e
-          APP_PATH="build/ios/iphoneos/Runner.app"
-          test -d "$APP_PATH"
-          rm -rf Payload Runner-unsigned.ipa
-          mkdir -p Payload
-          cp -R "$APP_PATH" Payload/Runner.app
-          zip -qry Runner-unsigned.ipa Payload
-          ls -lh Runner-unsigned.ipa
+          rm -rf dist Payload
+          mkdir -p dist
+          if [ -d build/ios/iphoneos/Runner.app ]; then
+            echo "Packaging unsigned device IPA"
+            mkdir -p Payload
+            cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
+            zip -qry dist/parkinson-monitor-unsigned.ipa Payload
+          fi
+          if [ -d build/ios/iphonesimulator/Runner.app ]; then
+            echo "Packaging simulator app"
+            ( cd build/ios/iphonesimulator && zip -qry "$GITHUB_WORKSPACE/dist/parkinson-monitor-simulator.zip" Runner.app )
+          fi
+          ls -lh dist/
+          if [ -z "$(ls -A dist)" ]; then
+            echo "no iOS artifacts were produced"
+            exit 1
+          fi
 
-      - name: Upload unsigned IPA
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: parkinson-monitor-ios-unsigned-ipa
-          path: Runner-unsigned.ipa
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload Runner.app bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: parkinson-monitor-ios-runner-app
-          path: build/ios/iphoneos/Runner.app
+          name: parkinson-monitor-ios
+          path: dist/*
           if-no-files-found: error
           retention-days: 30
