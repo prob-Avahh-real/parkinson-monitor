@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parkinson_monitor/presentation/blocs/monitoring/monitoring_bloc.dart';
 import 'package:parkinson_monitor/domain/entities/movement_disorder_type.dart';
 import 'package:parkinson_monitor/domain/entities/detection_event.dart';
+// DeviceState is a `part of` device_bloc.dart, so it must be imported via it.
+import 'package:parkinson_monitor/presentation/blocs/device/device_bloc.dart';
 
 void main() {
   group('MonitoringState', () {
