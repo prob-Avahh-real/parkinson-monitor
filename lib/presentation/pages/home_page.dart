@@ -7,8 +7,6 @@ import 'device_scan_page.dart';
 import 'monitoring_page.dart';
 import 'history_page.dart';
 import 'settings_page.dart';
-import 'medication_page.dart';
-import '../../core/feature_flag.dart';
 import '../../domain/entities/movement_disorder_type.dart';
 
 /// 首页 — 仪表盘总览
@@ -80,26 +78,22 @@ class _DeviceStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DeviceBloc, DeviceState>(
       builder: (context, state) {
-        return Semantics(
-          label: state.isConnected ? '设备已连接' : '未连接设备',
-          button: true,
-          hint: state.isConnected ? '轻点以断开连接' : '轻点以扫描设备',
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: state.isConnected
-                          ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      state.isConnected
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: state.isConnected
+                        ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    state.isConnected
                         ? Icons.watch
                         : Icons.watch_off_outlined,
                     color: state.isConnected
@@ -400,64 +394,6 @@ class _RecentEvents extends StatelessWidget {
 class _FeatureGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final cards = <Widget>[
-      _FeatureCard(
-        icon: Icons.history,
-        title: '历史记录',
-        subtitle: '查看监测历史',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HistoryPage()),
-        ),
-      ),
-      _FeatureCard(
-        icon: Icons.bluetooth,
-        title: '设备管理',
-        subtitle: '连接可穿戴设备',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const DeviceScanPage()),
-        ),
-      ),
-      _FeatureCard(
-        icon: Icons.bar_chart,
-        title: '趋势分析',
-        subtitle: '症状趋势图表',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HistoryPage()),
-        ),
-      ),
-      if (FeatureFlag('medication_tracking').isEnabled)
-        _FeatureCard(
-          icon: Icons.medication,
-          title: '用药记录',
-          subtitle: '记录用药时间',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MedicationPage()),
-          ),
-        ),
-      _FeatureCard(
-        icon: Icons.tune,
-        title: '参数设置',
-        subtitle: '调整检测阈值',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SettingsPage()),
-        ),
-      ),
-      _FeatureCard(
-        icon: Icons.picture_as_pdf,
-        title: '导出报告',
-        subtitle: '生成 PDF 报告',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SettingsPage()),
-        ),
-      ),
-    ];
-
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -465,7 +401,44 @@ class _FeatureGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       childAspectRatio: 1.6,
-      children: cards,
+      children: [
+        _FeatureCard(
+          icon: Icons.history,
+          title: '历史记录',
+          subtitle: '查看监测历史',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const HistoryPage()),
+          ),
+        ),
+        _FeatureCard(
+          icon: Icons.bluetooth,
+          title: '设备管理',
+          subtitle: '连接可穿戴设备',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DeviceScanPage()),
+          ),
+        ),
+        _FeatureCard(
+          icon: Icons.bar_chart,
+          title: '趋势分析',
+          subtitle: '症状趋势图表',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const HistoryPage()),
+          ),
+        ),
+        _FeatureCard(
+          icon: Icons.tune,
+          title: '参数设置',
+          subtitle: '调整检测阈值',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsPage()),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,17 +3,10 @@ import 'package:uuid/uuid.dart';
 import '../../core/utils/signal_processor.dart';
 import '../../domain/entities/detection_event.dart';
 import '../../domain/entities/movement_disorder_type.dart';
-import 'ml_model_service.dart';
 
 /// 帕金森运动障碍实时检测引擎
-///
-/// FOG 检测采用双引擎策略：
-///   首选: ML 模型推理（精度高、跨患者泛化好）
-///   回退: FFT 阈值（模型不可用时自动降级）
-/// 震颤和运动迟缓继续使用 FFT 方法。
 class DetectionEngine {
   final SignalProcessor _processor;
-  final MlModelService? _mlModel;
   final _uuid = const Uuid();
 
   /// 检测事件控制器
@@ -24,7 +17,6 @@ class DetectionEngine {
 
   // ── 阈值参数 ──
   static const double _fogFreezeIndexThreshold = 1.8;
-  static const double _fogMlThreshold = 0.5; // ML 输出的 FOG 概率阈值
   static const double _tremorPowerThreshold = 0.3;
   static const double _tremorFreqLow = 4.0;
   static const double _tremorFreqHigh = 6.0;
@@ -43,13 +35,8 @@ class DetectionEngine {
   int _bradyConsecutiveCount = 0;
   static const int _consecutiveThreshold = 3; // 连续 N 次确认
 
-  /// 引擎类型（用于调试/日志）
-  String get activeFogEngine =>
-      (_mlModel?.isLoaded ?? false) ? 'ML' : 'FFT';
-
-  DetectionEngine({int sampleRate = 50, MlModelService? mlModel})
-      : _processor = SignalProcessor(sampleRate: sampleRate),
-        _mlModel = mlModel;
+  DetectionEngine({int sampleRate = 50})
+      : _processor = SignalProcessor(sampleRate: sampleRate);
 
   /// 输入传感器数据并执行检测
   void processReading({
@@ -75,67 +62,17 @@ class DetectionEngine {
   // ── 步态冻结检测 ──
 
   void _detectFreezingOfGait() {
+    // 使用垂直轴 (accelZ) — 步态信息在垂直方向最明显
     final vertAccel = _processor.verticalAccel;
     if (vertAccel.length < _processor.sampleRate * 3) return;
 
-    // 双引擎策略
-    double fi;
-    bool isFog;
-    double confidence;
+    // 计算冻结指数 (基于垂直加速度)
+    // FI = totalBandPower(3-8Hz) / totalBandPower(0.5-3Hz)
+    // 高 FI 表示 3-8Hz 震颤功率远超 0.5-3Hz 运动功率 → FoG
+    final fi = _processor.freezeIndex(vertAccel);
 
-    if (_mlModel?.isLoaded ?? false) {
-      // ── 引擎 A: ML 模型推理 ──
-      // 使用最近 128 点（约 2.5 秒@50Hz）的数据
-      final windowSize = 128;
-      final start = vertAccel.length - windowSize;
-      final x = vertAccel.sublist(start < 0 ? 0 : start);
-
-      // 构建 ML 输入
-      final accelX = _processor.horizontalAccel;
-      final accelY = _processor.accelMagnitudes; // 近似替代 y 轴
-
-      // 异步执行 ML 推理
-      _mlModel!.predictFogProbability(
-        accelX: accelX,
-        accelY: accelY,
-        accelZ: vertAccel,
-      ).then((prob) {
-        if (prob < 0) return; // 模型不可用标记
-
-        final mlIsFog = prob > _fogMlThreshold;
-        if (mlIsFog) {
-          _fogConsecutiveCount++;
-        } else {
-          _fogConsecutiveCount = 0;
-        }
-
-        _emitIfThresholdReached(
-          consecutiveCount: _fogConsecutiveCount,
-          lastEvent: _lastFogEvent,
-          onThreshold: () {
-            _lastFogEvent = DateTime.now();
-            final sev = prob > 0.8
-                ? Severity.severe
-                : prob > 0.65
-                    ? Severity.moderate
-                    : Severity.mild;
-            _detectionController.add(DetectionEvent(
-              id: _uuid.v4(),
-              timestamp: DateTime.now(),
-              type: MovementDisorderType.freezingOfGait,
-              severity: sev,
-              confidence: prob.clamp(0.0, 1.0),
-              freezeIndex: null, // ML 模式下不输出 FI
-            ));
-          },
-        );
-      });
-      return;
-    }
-
-    // ── 引擎 B: FFT 阈值回退 ──
-    fi = _processor.freezeIndex(vertAccel);
-    isFog = fi > _fogFreezeIndexThreshold;
+    // 冻结判断：仅用 FI，避免频谱泄漏导致的误判
+    final isFog = fi > _fogFreezeIndexThreshold;
 
     if (isFog) {
       _fogConsecutiveCount++;
@@ -143,38 +80,29 @@ class DetectionEngine {
       _fogConsecutiveCount = 0;
     }
 
-    _emitIfThresholdReached(
-      consecutiveCount: _fogConsecutiveCount,
-      lastEvent: _lastFogEvent,
-      onThreshold: () {
-        _lastFogEvent = DateTime.now();
-        final sev = fi > 4.0
-            ? Severity.severe
-            : fi > 2.5
-                ? Severity.moderate
-                : Severity.mild;
+    // 连续确认后触发
+    if (_fogConsecutiveCount >= _consecutiveThreshold) {
+      final now = DateTime.now();
+      if (now.difference(_lastFogEvent) > _debounceDuration) {
+        _lastFogEvent = now;
+
+        Severity sev;
+        if (fi > 4.0) {
+          sev = Severity.severe;
+        } else if (fi > 2.5) {
+          sev = Severity.moderate;
+        } else {
+          sev = Severity.mild;
+        }
+
         _detectionController.add(DetectionEvent(
           id: _uuid.v4(),
-          timestamp: DateTime.now(),
+          timestamp: now,
           type: MovementDisorderType.freezingOfGait,
           severity: sev,
           confidence: (fi / 5.0).clamp(0.0, 1.0),
           freezeIndex: fi,
         ));
-      },
-    );
-  }
-
-  /// 连续确认 + 防抖后的统一发射逻辑
-  void _emitIfThresholdReached({
-    required int consecutiveCount,
-    required DateTime lastEvent,
-    required Function() onThreshold,
-  }) {
-    if (consecutiveCount >= _consecutiveThreshold) {
-      final now = DateTime.now();
-      if (now.difference(lastEvent) > _debounceDuration) {
-        onThreshold();
       }
     }
   }

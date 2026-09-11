@@ -111,6 +111,15 @@ jobs:
             echo "no iOS artifacts produced"
             exit 1
           fi
+          for f in dist/*; do
+            sz=$(stat -f%z "$f")
+            echo "$f -> $sz bytes"
+            if [ "$sz" -lt 1000000 ]; then
+              echo "ARTIFACT SANITY CHECK FAILED: $f is only $sz bytes"
+              echo "This means the app was not fully packaged (Dart compile failed?)."
+              exit 1
+            fi
+          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
