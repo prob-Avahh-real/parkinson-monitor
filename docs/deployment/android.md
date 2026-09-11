@@ -114,14 +114,12 @@ flutter build appbundle --release
 
 ### Production
 ```bash
-cp .env.production .env
 # Edit .env with production values
 flutter build appbundle --release
 ```
 
 ### Development
 ```bash
-cp .env.development .env
 # Edit .env with development values
 flutter build apk --debug
 ```
@@ -136,10 +134,13 @@ version: 1.0.0+1
 
 Format: `major.minor.patch+buildNumber`
 
-### Automatic Versioning
-Use the release workflow:
+### Manual Versioning
 ```bash
-make release
+# Tag the release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# This triggers the release workflow automatically
 ```
 
 ## Troubleshooting
