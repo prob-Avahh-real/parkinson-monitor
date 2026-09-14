@@ -24,6 +24,16 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>需要蓝牙权限来连接可穿戴传感器设备，采集运动数据用于帕金森症状监测。</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>需要蓝牙权限来连接可穿戴传感器设备，采集运动数据用于帕金森症状监测。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>需要定位权限以在户外步行监测中记录运动轨迹与步行距离。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>需要定位权限以在户外步行监测中记录运动轨迹与步行距离。</string>
+	<key>NSMotionUsageDescription</key>
+	<string>需要运动与健身权限来读取手机加速度计与陀螺仪数据，用于运动障碍检测。</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
