@@ -44,7 +44,7 @@ class FeedbackService {
   /// 步态冻结反馈 — 节奏性声音引导起步
   Future<void> _fogFeedback(DetectionEvent event) async {
     // 振动模式：短-短-长
-    final hasVibrator = await Vibration.hasVibrator() ?? false;
+    final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator) {
       await Vibration.vibrate(duration: 200);
       await Future.delayed(const Duration(milliseconds: 100));
@@ -66,7 +66,7 @@ class FeedbackService {
 
   /// 震颤反馈 — 温和提醒
   Future<void> _tremorFeedback(DetectionEvent event) async {
-    final hasVibrator = await Vibration.hasVibrator() ?? false;
+    final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator) {
       await Vibration.vibrate(duration: 300);
     }
@@ -74,7 +74,7 @@ class FeedbackService {
 
   /// 运动迟缓反馈 — 激励提示
   Future<void> _bradyFeedback(DetectionEvent event) async {
-    final hasVibrator = await Vibration.hasVibrator() ?? false;
+    final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator) {
       await Vibration.vibrate(duration: 150);
       await Future.delayed(const Duration(milliseconds: 200));
@@ -84,7 +84,7 @@ class FeedbackService {
 
   /// 连接成功反馈
   Future<void> connectedFeedback() async {
-    final hasVibrator = await Vibration.hasVibrator() ?? false;
+    final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator) {
       await Vibration.vibrate(duration: 100);
     }
@@ -92,7 +92,7 @@ class FeedbackService {
 
   /// 断开连接反馈
   Future<void> disconnectedFeedback() async {
-    final hasVibrator = await Vibration.hasVibrator() ?? false;
+    final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator) {
       await Vibration.vibrate(duration: 100);
       await Future.delayed(const Duration(milliseconds: 300));
