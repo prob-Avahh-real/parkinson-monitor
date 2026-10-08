@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 jobs:
   release:
@@ -21,9 +22,22 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Get version from tag
+      - name: Resolve version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            # Manual dispatch (no tag): keep the artifact name valid instead of
+            # leaking the ref path into it.
+            echo "VERSION=0.0.0-manual" >> "$GITHUB_OUTPUT"
+          fi
+
+      # pubspec.yaml declares .env as an asset and .env is gitignored, so the build
+      # dies with "Failed to build asset bundle" unless we materialize it first.
+      # This is the same fix ci.yml already needed.
+      - name: Prepare CI env file
+        run: cp .env.ci .env
 
       - name: Install dependencies
         run: flutter pub get
@@ -34,7 +48,13 @@ jobs:
       - name: Build Android App Bundle
         run: flutter build appbundle --release
 
+      - name: Show artifact sizes
+        run: ls -lh build/app/outputs/flutter-apk/app-release.apk build/app/outputs/bundle/release/app-release.aab
+
+      # Only a real tag should publish a GitHub Release; a manual dispatch just
+      # wants the installable APK.
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
