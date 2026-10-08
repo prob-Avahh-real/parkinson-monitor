@@ -1,0 +1,24 @@
+// Flutter plugins published against an old compileSdk break under newer AGP, which
+// enforces the AAR metadata check. The failure looks like:
+//
+//   Execution failed for task ':audioplayers_android:checkReleaseAarMetadata'
+//     Dependency 'androidx.lifecycle:lifecycle-runtime:2.7.0' requires ... version 34
+//     or later ... :audioplayers_android is currently compiled against android-33.
+//
+// Flutter's Gradle plugin used to raise a plugin's compileSdk automatically; it no
+// longer does, so we raise it here. Only library subprojects are touched, and only
+// upwards - :app keeps flutter.compileSdkVersion so the app's own compileSdk is never
+// lowered below what Flutter chose.
+//
+// Kept as a Groovy script on purpose: the `android` extension is accessed dynamically,
+// so this does not depend on AGP classes being on this project's script classpath.
+subprojects { subproject ->
+    subproject.plugins.withId('com.android.library') {
+        subproject.afterEvaluate {
+            def android = subproject.extensions.findByName('android')
+            if (android != null) {
+                android.compileSdk = 36
+            }
+        }
+    }
+}
