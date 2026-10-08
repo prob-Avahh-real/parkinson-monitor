@@ -27,7 +27,7 @@ dependencies:
   flutter_blue_plus: ^1.32.0
 
   # Sensors (phone fallback)
-  sensors_plus: ^4.0.0
+  sensors_plus: ^7.0.0
 
   # Storage
   hive: ^2.2.3
@@ -38,8 +38,8 @@ dependencies:
   geolocator: ^10.0.0
 
   # Feedback
-  vibration: ^1.8.0
-  audioplayers: ^5.2.0
+  vibration: ^3.2.1
+  audioplayers: ^6.0.0
 
   # Permissions
   permission_handler: ^11.0.0
